@@ -46,11 +46,11 @@ def main(cfg: TrainConfig):
     model_summary = RichModelSummary(max_depth=2)
 
     # init experiment logger
-    pl_logger = WandbLogger(
-        name=cfg.exp_name,
-        project="child-mind-institute-detect-sleep-states",
-    )
-    pl_logger.log_hyperparams(cfg)
+    #pl_logger = WandbLogger(
+    #    name=cfg.exp_name,
+    #    project="child-mind-institute-detect-sleep-states",
+    #)
+    #pl_logger.log_hyperparams(cfg)
 
     trainer = Trainer(
         # env
@@ -65,7 +65,7 @@ def main(cfg: TrainConfig):
         gradient_clip_val=cfg.trainer.gradient_clip_val,
         accumulate_grad_batches=cfg.trainer.accumulate_grad_batches,
         callbacks=[checkpoint_cb, lr_monitor, progress_bar, model_summary],
-        logger=pl_logger,
+        #logger=pl_logger,
         # resume_from_checkpoint=resume_from,
         num_sanity_val_steps=0,
         log_every_n_steps=int(len(datamodule.train_dataloader()) * 0.1),

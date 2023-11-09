@@ -77,7 +77,6 @@ def save_each_series(this_series_df: pl.DataFrame, columns: list[str], output_di
 def main(cfg: PrepareDataConfig):
     processed_dir: Path = Path(cfg.dir.processed_dir) / cfg.phase
 
-    # ディレクトリが存在する場合は削除
     if processed_dir.exists():
         shutil.rmtree(processed_dir)
         print(f"Removed {cfg.phase} dir: {processed_dir}")
@@ -120,10 +119,9 @@ def main(cfg: PrepareDataConfig):
         n_unique = series_df.get_column("series_id").n_unique()
     with trace("Save features"):
         for series_id, this_series_df in tqdm(series_df.group_by("series_id"), total=n_unique):
-            # 特徴量を追加
+
             this_series_df = add_feature(this_series_df)
 
-            # 特徴量をそれぞれnpyで保存
             series_dir = processed_dir / series_id  # type: ignore
             save_each_series(this_series_df, FEATURE_NAMES, series_dir)
 
