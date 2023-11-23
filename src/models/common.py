@@ -5,6 +5,7 @@ import torch.nn as nn
 from src.conf import DecoderConfig, FeatureExtractorConfig, InferenceConfig, TrainConfig
 from src.models.base import BaseModel
 from src.models.decoder.lstmdecoder import LSTMDecoder
+from src.models.decoder.wavenetdecoder import WaveNetDecoder
 from src.models.decoder.mlpdecoder import MLPDecoder
 from src.models.decoder.transformerdecoder import TransformerDecoder
 from src.models.decoder.unet1ddecoder import UNet1DDecoder
@@ -18,7 +19,7 @@ from src.models.spec2Dcnn import Spec2DCNN
 FEATURE_EXTRACTOR_TYPE = Union[
     CNNSpectrogram, PANNsFeatureExtractor, LSTMFeatureExtractor, SpecFeatureExtractor
 ]
-DECODER_TYPE = Union[UNet1DDecoder, LSTMDecoder, TransformerDecoder, MLPDecoder]
+DECODER_TYPE = Union[UNet1DDecoder, LSTMDecoder, TransformerDecoder, MLPDecoder, WaveNetDecoder]
 
 
 def get_feature_extractor(
@@ -72,8 +73,13 @@ def get_decoder(
         )
     elif cfg.name == "MLPDecoder":
         decoder = MLPDecoder(n_channels=n_channels, n_classes=n_classes)
+        
+    elif cfg.name == "WaveNetDecoder":
+        decoder = WaveNetDecoder(inch=n_channels , n_out=n_classes)
+        
     else:
         raise ValueError(f"Invalid decoder name: {cfg.name}")
+    print(decoder)
 
     return decoder
 

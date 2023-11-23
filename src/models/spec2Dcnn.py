@@ -58,6 +58,7 @@ class Spec2DCNN(BaseModel):
 
     def _logits_to_proba_per_step(self, logits: torch.Tensor, org_duration: int) -> torch.Tensor:
         preds = logits.sigmoid()
+        #preds = logits.relu()
         return resize(preds, size=[org_duration, preds.shape[-1]], antialias=False)
 
     def _correct_labels(self, labels: torch.Tensor, org_duration: int) -> torch.Tensor:
