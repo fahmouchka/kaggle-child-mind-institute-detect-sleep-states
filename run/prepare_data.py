@@ -70,7 +70,7 @@ def add_feature(series_df: pl.DataFrame) -> pl.DataFrame:
         .select("series_id", *FEATURE_NAMES)
     )
     
-    window_length = 3600 if len(series_df) >3600 else 10
+    window_length = 3601 if len(series_df) >3601 else 11
     smoothed_anglez_diff = savgol_filter(series_df['anglez_abs_diff'], window_length=window_length, polyorder=3)
     smoothed_enmo_diff = savgol_filter(series_df['enmo_abs_diff'], window_length=window_length, polyorder=3)
     
