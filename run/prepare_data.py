@@ -3,8 +3,10 @@ from pathlib import Path
 
 import hydra
 import numpy as np
+import pandas as pd
 import polars as pl
 from tqdm import tqdm
+from scipy.signal import savgol_filter
 
 from src.conf import PrepareDataConfig
 from src.utils.common import trace
@@ -29,7 +31,11 @@ FEATURE_NAMES = [
     "minute_cos",
     "anglez_sin",
     "anglez_cos",
+    "anglez_abs_diff",
+    "enmo_abs_diff"
 ]
+ADDITIONAL_FEATURES = ["smoothed_anglez_diff", "smoothed_enmo_diff"]
+    
 
 ANGLEZ_MEAN = -8.810476
 ANGLEZ_STD = 35.521877
@@ -44,12 +50,45 @@ def to_coord(x: pl.Expr, max_: int, name: str) -> list[pl.Expr]:
 
     return [x_sin.alias(f"{name}_sin"), x_cos.alias(f"{name}_cos")]
 
-
 def deg_to_rad(x: pl.Expr) -> pl.Expr:
     return np.pi / 180 * x
 
-
 def add_feature(series_df: pl.DataFrame) -> pl.DataFrame:
+    series_df = (
+        series_df.with_row_count("step")
+        .with_columns(
+            *to_coord(pl.col("timestamp").dt.hour(), 24, "hour"),
+            *to_coord(pl.col("timestamp").dt.month(), 12, "month"),
+            *to_coord(pl.col("timestamp").dt.minute(), 60, "minute"),
+            pl.col("step") / pl.count("step"),
+            pl.col('anglez_rad').sin().alias('anglez_sin'),
+            pl.col('anglez_rad').cos().alias('anglez_cos'),
+            pl.col("anglez").diff(1).abs().alias("anglez_abs_diff"),
+            pl.col("enmo").diff(1).abs().alias("enmo_abs_diff")
+            
+        )
+        .select("series_id", *FEATURE_NAMES)
+    )
+    
+
+    smoothed_anglez_diff = savgol_filter(series_df['anglez_abs_diff'], window_length=720*5, polyorder=3)
+    smoothed_enmo_diff = savgol_filter(series_df['enmo_abs_diff'], window_length=720*5, polyorder=3)
+    
+    df_aux_anglez = pd.DataFrame()
+    df_aux_enmo = pd.DataFrame()
+    
+    df_aux_anglez["anglez"] = smoothed_anglez_diff
+    df_aux_anglez["enmo"] = smoothed_enmo_diff
+
+    # Add the smoothed results as new columns to the DataFrame
+    series_df = series_df.with_columns(
+        smoothed_anglez_diff=pl.Series("smoothed_anglez_diff", df_aux_anglez["anglez"].bfill().values),
+        smoothed_enmo_diff=pl.Series("smoothed_enmo_diff", df_aux_anglez["enmo"].bfill().values )
+    )
+        
+    return series_df
+
+"""def add_feature(series_df: pl.DataFrame) -> pl.DataFrame:
     series_df = (
         series_df.with_row_count("step")
         .with_columns(
@@ -62,14 +101,14 @@ def add_feature(series_df: pl.DataFrame) -> pl.DataFrame:
         )
         .select("series_id", *FEATURE_NAMES)
     )
-    return series_df
+    return series_df"""
 
 
 def save_each_series(this_series_df: pl.DataFrame, columns: list[str], output_dir: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for col_name in columns:
-        x = this_series_df.get_column(col_name).to_numpy(zero_copy_only=True)
+        x = this_series_df.get_column(col_name).fill_null(strategy="backward").to_numpy(zero_copy_only=True)
         np.save(output_dir / f"{col_name}.npy", x)
 
 
@@ -123,7 +162,7 @@ def main(cfg: PrepareDataConfig):
             this_series_df = add_feature(this_series_df)
 
             series_dir = processed_dir / series_id  # type: ignore
-            save_each_series(this_series_df, FEATURE_NAMES, series_dir)
+            save_each_series(this_series_df, FEATURE_NAMES+ADDITIONAL_FEATURES , series_dir)
 
 
 if __name__ == "__main__":

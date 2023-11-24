@@ -176,7 +176,7 @@ class UNet1DDecoder(nn.Module):
         self.up4 = Up(
             128, 64, bilinear, scale_factor, norm=partial(create_layer_norm, length=self.duration)
         )
-
+                
         self.cls = nn.Sequential(
             nn.Conv1d(64, 64, kernel_size=3, padding=1),
             nn.ReLU(),
@@ -207,6 +207,7 @@ class UNet1DDecoder(nn.Module):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
+        
 
         # classifier
         logits = self.cls(x)  # (batch_size, n_classes, n_timesteps)

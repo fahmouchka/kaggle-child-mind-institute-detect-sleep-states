@@ -15,7 +15,7 @@ defaults:
   - dataset: seg
   - model: Spec2DCNN
   - feature_extractor: CNNSpectrogram
-  - decoder: WaveNetDecoder
+  - decoder: UNet1DDecoder
   - split: fold_0
 
 seed: 42
@@ -31,7 +31,7 @@ trainer:
   accelerator: auto
   use_amp: true
   debug: false
-  gradient_clip_val: 3.0
+  gradient_clip_val: 20.0
   accumulate_grad_batches: 1
   monitor: val_score
   monitor_mode: max
@@ -75,6 +75,8 @@ features:
   # - "minute_cos"
   # - "anglez_sin"
   # - "anglez_cos"
+  - "smoothed_anglez_diff"
+  - "smoothed_enmo_diff"
 
 # optimizer
 optimizer:

@@ -3,13 +3,31 @@ from typing import Optional
 import segmentation_models_pytorch as smp
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.transforms.functional import resize
 
 from src.augmentation.cutmix import Cutmix
 from src.augmentation.mixup import Mixup
 from src.models.base import BaseModel
 
+class FocalLoss(nn.Module):
+    def __init__(self,num_classes, beta=0.9999, gamma=2.0, alpha=0.25):
+        super().__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        self.num_classes = num_classes
 
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor):
+        y_pred = y_pred.permute([0, 2, 1]).reshape(-1, self.num_classes)
+        y_true = y_true.permute([0, 2, 1]).reshape(-1, self.num_classes)
+
+        p = torch.sigmoid(y_pred)
+        ce_loss = F.binary_cross_entropy_with_logits(y_pred, y_true, reduction="none")
+        p_t = p * y_true + (1 - p) * (1 - y_true)
+        loss = self.alpha*ce_loss * ((1 - p_t) ** self.gamma)
+
+        return loss.mean()
+    
 class Spec2DCNN(BaseModel):
     def __init__(
         self,

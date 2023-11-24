@@ -38,9 +38,8 @@ def main(cfg: TrainConfig):
         verbose=True,
         monitor=cfg.trainer.monitor,
         mode=cfg.trainer.monitor_mode,
-        save_top_k=-1,
+        save_top_k=1,
         save_last=False,
-        every_n_epochs=10
     )
     lr_monitor = LearningRateMonitor("epoch")
     progress_bar = RichProgressBar()
@@ -78,7 +77,7 @@ def main(cfg: TrainConfig):
 
     # load best weights
     model = model.load_from_checkpoint(
-        "/notebooks/kaggle-child-mind-institute-detect-sleep-states/data/output/train/exp8_fulldata/single/lightning_logs/version_0/checkpoints/epoch=49-step=7400.ckpt",
+        checkpoint_cb.best_model_path,
         cfg=cfg,
         val_event_df=datamodule.valid_event_df,
         feature_dim=len(cfg.features),

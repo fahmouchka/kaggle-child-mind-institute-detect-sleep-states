@@ -35,7 +35,8 @@ class BaseModel(nn.Module):
         """
         if labels is not None:
             logits, labels = self._forward(x, labels, do_mixup, do_cutmix)
-            loss = 0.8*self.loss_fn(logits[:,:,[1,2]], labels[:,:,[1,2]]) + 0.2*self.loss_fn(logits[:,:,0], labels[:,:,0])
+            loss = 0.9*self.loss_fn(logits[:,:,[1,2]], labels[:,:,[1,2]]) + 0.1*self.loss_fn(logits[:,:,0], labels[:,:,0])
+            #loss = self.loss_fn(logits, labels)
             return ModelOutput(logits, loss)
         else:
             logits = self._forward(x, labels=None, do_mixup=False, do_cutmix=False)
