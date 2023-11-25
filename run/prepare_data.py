@@ -32,9 +32,12 @@ FEATURE_NAMES = [
     "anglez_sin",
     "anglez_cos",
     "anglez_abs_diff",
-    "enmo_abs_diff"
+    "enmo_abs_diff",
 ]
-ADDITIONAL_FEATURES = ["smoothed_anglez_diff", "smoothed_enmo_diff"]
+ADDITIONAL_FEATURES = ["anglez_abs_diff_rol_5hrs",
+    "anglez_abs_diff_rol_1day",
+    "enmo_abs_diff_rol_5hrs",
+    "enmo_abs_diff_rol_1day"]
     
 
 ANGLEZ_MEAN = -8.810476
@@ -64,12 +67,21 @@ def add_feature(series_df: pl.DataFrame) -> pl.DataFrame:
             pl.col('anglez_rad').sin().alias('anglez_sin'),
             pl.col('anglez_rad').cos().alias('anglez_cos'),
             pl.col("anglez").diff(1).abs().alias("anglez_abs_diff"),
-            pl.col("enmo").diff(1).abs().alias("enmo_abs_diff")
-            
+            pl.col("enmo").diff(1).abs().alias("enmo_abs_diff"),
         )
         .select("series_id", *FEATURE_NAMES)
     )
-    
+
+    series_df = (
+        series_df
+        .with_columns(
+            pl.col("anglez_abs_diff").rolling_mean(3600).alias("anglez_abs_diff_rol_5hrs"),
+            pl.col("anglez_abs_diff").rolling_mean(17280).alias("anglez_abs_diff_rol_1day"),
+            pl.col("enmo_abs_diff").rolling_mean(3600).alias("enmo_abs_diff_rol_5hrs"),
+            pl.col("enmo_abs_diff").rolling_mean(17280).alias("enmo_abs_diff_rol_1day"),
+        )
+    )
+    """
     window_length = 3601 if len(series_df) >3601 else 11
     smoothed_anglez_diff = savgol_filter(series_df['anglez_abs_diff'], window_length=window_length, polyorder=3)
     smoothed_enmo_diff = savgol_filter(series_df['enmo_abs_diff'], window_length=window_length, polyorder=3)
@@ -80,11 +92,10 @@ def add_feature(series_df: pl.DataFrame) -> pl.DataFrame:
     df_aux_anglez["anglez"] = smoothed_anglez_diff
     df_aux_anglez["enmo"] = smoothed_enmo_diff
 
-    # Add the smoothed results as new columns to the DataFrame
     series_df = series_df.with_columns(
         smoothed_anglez_diff=pl.Series("smoothed_anglez_diff", df_aux_anglez["anglez"].bfill().values),
         smoothed_enmo_diff=pl.Series("smoothed_enmo_diff", df_aux_anglez["enmo"].bfill().values )
-    )
+    )"""
         
     return series_df
 
@@ -108,7 +119,7 @@ def save_each_series(this_series_df: pl.DataFrame, columns: list[str], output_di
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for col_name in columns:
-        x = this_series_df.get_column(col_name).fill_null(strategy="backward").to_numpy(zero_copy_only=True)
+        x = this_series_df.get_column(col_name).fill_null(strategy="backward").fill_null(strategy="forward").fill_null(0).to_numpy(zero_copy_only=True)
         np.save(output_dir / f"{col_name}.npy", x)
 
 
@@ -162,7 +173,7 @@ def main(cfg: PrepareDataConfig):
             this_series_df = add_feature(this_series_df)
 
             series_dir = processed_dir / series_id  # type: ignore
-            save_each_series(this_series_df, FEATURE_NAMES+ADDITIONAL_FEATURES , series_dir)
+            save_each_series(this_series_df, FEATURE_NAMES + ADDITIONAL_FEATURES, series_dir)
 
 
 if __name__ == "__main__":

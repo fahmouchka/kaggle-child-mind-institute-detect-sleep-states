@@ -32,6 +32,7 @@ def main(cfg: TrainConfig):
     model = PLSleepModel(
         cfg, datamodule.valid_event_df, len(cfg.features), len(cfg.labels), cfg.duration
     )
+    
 
     # set callbacks
     checkpoint_cb = ModelCheckpoint(
