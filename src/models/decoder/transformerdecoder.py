@@ -56,15 +56,17 @@ class TransformerDecoder(nn.Module):
         self.pred = nn.Linear(input_size, n_classes)
 
     def forward(self, x):
+        x = x.permute(2 ,0,1) 
 
         for conv, transformer_layer, layer_norm1, layer_norm2, deconv in zip(self.conv_layers,
                                                                self.transformer_encoder,
                                                                self.layer_norm_layers,
                                                                self.layer_norm_layers2,
-                                                               self.deconv_layers):
+                                                                self.deconv_layers):
+            
             #LXBXC to BXCXL
-            res=x.permute(2, 0, 1)
-            x=F.relu(conv(x).permute(2,0,1))
+            res=x
+            x=F.relu(conv(x.permute(1,2,0)).permute(2,0,1))
             x=layer_norm1(x)
             x=transformer_layer(x)
 
@@ -72,7 +74,8 @@ class TransformerDecoder(nn.Module):
 
             x=layer_norm2(x)
             x=res+x
-
+            
+            
         
 
         x = x.permute(1, 0, 2)
