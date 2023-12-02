@@ -37,8 +37,11 @@ FEATURE_NAMES = [
 ADDITIONAL_FEATURES = ["anglez_abs_diff_rol_5hrs",
     "anglez_abs_diff_rol_1day",
     "enmo_abs_diff_rol_5hrs",
-    "enmo_abs_diff_rol_1day"]
+    "enmo_abs_diff_rol_1day",
+    "smoothed_anglez_diff",
+    "smoothed_enmo_diff"
     
+                      ]
 
 ANGLEZ_MEAN = -8.810476
 ANGLEZ_STD = 35.521877
@@ -81,7 +84,7 @@ def add_feature(series_df: pl.DataFrame) -> pl.DataFrame:
             pl.col("enmo_abs_diff").rolling_mean(17280).alias("enmo_abs_diff_rol_1day"),
         )
     )
-    """
+    
     window_length = 3601 if len(series_df) >3601 else 11
     smoothed_anglez_diff = savgol_filter(series_df['anglez_abs_diff'], window_length=window_length, polyorder=3)
     smoothed_enmo_diff = savgol_filter(series_df['enmo_abs_diff'], window_length=window_length, polyorder=3)
@@ -95,7 +98,7 @@ def add_feature(series_df: pl.DataFrame) -> pl.DataFrame:
     series_df = series_df.with_columns(
         smoothed_anglez_diff=pl.Series("smoothed_anglez_diff", df_aux_anglez["anglez"].bfill().values),
         smoothed_enmo_diff=pl.Series("smoothed_enmo_diff", df_aux_anglez["enmo"].bfill().values )
-    )"""
+    )
         
     return series_df
 

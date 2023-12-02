@@ -18,7 +18,7 @@ defaults:
   - decoder: UNet1DDecoder
   - split: fold_0
 
-seed: 42
+seed: 50
 exp_name: dummy
 batch_size: 32
 num_workers: 24
@@ -77,8 +77,8 @@ features:
   # - "minute_cos"
   # - "anglez_sin"
   # - "anglez_cos"
-  #- "smoothed_anglez_diff"
-  #- "smoothed_enmo_diff"
+  - "smoothed_anglez_diff"
+  - "smoothed_enmo_diff"
 
 
 # optimizer
